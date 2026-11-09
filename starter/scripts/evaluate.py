@@ -8,6 +8,8 @@ Run:
 
 import os
 
+import mlflow
+import mlflow.transformers
 import pandas as pd
 from dotenv import load_dotenv
 from sklearn.metrics import (
@@ -19,26 +21,30 @@ from sklearn.metrics import (
 )
 from transformers import pipeline
 
-# TODO: add mlflow required dependencies
-
-
 load_dotenv()
-
 
 def load_test_data(test_path: str) -> tuple[list[str], list[str]]:
     df = pd.read_csv(test_path)
     return df["text"].tolist(), df["label"].tolist()
 
 
+# The model config ships numeric labels (0.0, 1.0, 2.0); name them so
+# predictions match the test labels and the registered model.
+ID2LABEL = {0: "negative", 1: "neutral", 2: "positive"}
+
+
 def build_classifier(model_id: str):
     print(f"Loading {model_id}...")
-    return pipeline(
+    classifier = pipeline(
         "text-classification",
         model=model_id,
         tokenizer=model_id,
         truncation=True,
         max_length=512,
     )
+    classifier.model.config.id2label = ID2LABEL
+    classifier.model.config.label2id = {v: k for k, v in ID2LABEL.items()}
+    return classifier
 
 
 def run_inference(classifier, texts: list[str]) -> list[str]:
@@ -71,11 +77,27 @@ def main():
     print("\nClassification Report:")
     print(classification_report(y_true, y_pred))
 
-    # TODO: Use MLflow to track the evaluation run.
-    # Set the tracking URI and experiment name from environment variables,
-    # start a run, log the model parameters and computed metrics, then log
-    # and register the pipeline in the Model Registry.
-    # Documentation: https://mlflow.org/docs/latest/tracking.html
+    mlflow.set_tracking_uri(
+        os.getenv("MLFLOW_TRACKING_URI") or "http://localhost:5000"
+    )
+    mlflow.set_experiment(
+        os.getenv("MLFLOW_EXPERIMENT_NAME") or "finbert-evaluation"
+    )
+    with mlflow.start_run():
+        mlflow.log_params({
+            "model_id": model_id,
+            "test_path": test_path,
+            "test_samples": len(texts),
+            "batch_size": 32,
+            "max_length": 512,
+            "truncation": True,
+        })
+        mlflow.log_metrics(metrics)
+        mlflow.transformers.log_model(
+            transformers_model=classifier,
+            artifact_path="model",
+            registered_model_name=os.getenv("MODEL_NAME") or "finbert",
+        )
 
 
 if __name__ == "__main__":
