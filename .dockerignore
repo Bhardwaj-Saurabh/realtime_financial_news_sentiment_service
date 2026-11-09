@@ -1,0 +1,5 @@
+# Allowlist: send only what the image needs to the build context.
+*
+!requirements-api.txt
+!starter/app/
+**/__pycache__
