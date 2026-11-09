@@ -34,7 +34,8 @@ def get_latest_f1(client: MlflowClient, experiment_name: str) -> tuple[str, floa
 
     runs = client.search_runs(
         experiment_ids=[experiment.experiment_id],
-        filter_string="attributes.status = 'FINISHED'",
+        # Only evaluation runs log f1_weighted; this skips monitoring runs.
+        filter_string="attributes.status = 'FINISHED' and metrics.f1_weighted >= 0",
         order_by=["attributes.start_time DESC"],
         max_results=1,
     )
