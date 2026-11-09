@@ -52,3 +52,14 @@ def test_predict_batch(client: TestClient):
 def test_predict_batch_empty_list_returns_422(client: TestClient):
     response = client.post("/predict/batch", json={"texts": []})
     assert response.status_code == 422
+
+
+def test_metrics_exposes_prediction_counters(client: TestClient):
+    client.post("/predict", json={"text": HEADLINES[0]})
+    response = client.get("/metrics")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/plain")
+    body = response.text
+    assert "prediction_requests_total" in body
+    assert "prediction_latency_ms_bucket" in body
+    assert "prediction_errors_total" in body
