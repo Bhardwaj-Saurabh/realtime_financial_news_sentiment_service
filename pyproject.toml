@@ -31,3 +31,7 @@ dependencies = [
     "transformers>=4.40.2,<5",
     "uvicorn[standard]==0.29.0",
 ]
+
+[tool.ruff.lint]
+# Pin to ruff's long-standing defaults so new releases do not change CI.
+select = ["E4", "E7", "E9", "F"]
