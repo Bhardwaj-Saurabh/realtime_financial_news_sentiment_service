@@ -42,8 +42,10 @@ cd starter
 
 ### 2. Configure environment variables
 
+`.env` lives at the repo root:
+
 ```bash
-cp .env.example .env
+cp ../.env.example ../.env
 ```
 
 Fill in the required values in `.env`.
@@ -62,33 +64,36 @@ mlflow server --port 5000
 ## Project Structure
 
 ```
-starter/
-├── app/
-│   ├── main.py              # FastAPI service (Tasks 3 and 6)
-│   └── utils.py             # Model loading 
-├── data/                    # DVC-tracked datasets
-│   ├── raw_stream.csv       # Raw Bluesky financial posts
-├── monitoring/
-│   └── stream.py            # MLflow monitoring loop (Task 6)
-├── scripts/
-│   ├── load_data.py         # Downloads financial dataset
-│   ├── clean_data.py        # Cleans raw Bluesky stream
-│   ├── evaluate.py          # Evaluates model on test set, logs to MLflow (Task 2)
-│   ├── promote.py           # Promotes model to production alias if F1 >= threshold (Task 2)
-│   ├── run_deepchecks.py    # CI quality gate: property drift + prediction drift (Task 5)
-│   └── locustfile.py        # Locust load testing (Task 3)
-├── tests/
-│   └── test_api.py          # pytest integration tests for the API (Task 3)
+.
 ├── .github/
 │   └── workflows/
-│       └── ci-cd.yml        # CI/CD pipeline (Task 5)
-├── dvc.yaml                 # DVC pipeline definition (Task 1)
-├── params.yaml              # Configuration parameters 
-├── docker-compose.yml       # Local API service orchestration (Task 4)
-├── Dockerfile               # Production image (Task 4)
-├── prometheus.yml           # Prometheus scrape configuration (Task 6)
-├── requirements.txt         # All dependencies
-└── .env.example             # Environment variable template
+│       └── ci-cd.yml            # CI/CD pipeline (Task 5)
+├── starter/
+│   ├── app/
+│   │   ├── main.py              # FastAPI service (Tasks 3 and 6)
+│   │   └── utils.py             # Model loading
+│   ├── data/                    # DVC-tracked datasets
+│   │   └── raw_stream.csv       # Raw Bluesky financial posts
+│   ├── monitoring/
+│   │   └── stream.py            # MLflow monitoring loop (Task 6)
+│   ├── scripts/
+│   │   ├── load_data.py         # Downloads financial dataset
+│   │   ├── clean_data.py        # Cleans raw Bluesky stream
+│   │   ├── evaluate.py          # Evaluates model on test set, logs to MLflow (Task 2)
+│   │   ├── promote.py           # Promotes model to production alias if F1 >= threshold (Task 2)
+│   │   ├── run_deepchecks.py    # CI quality gate: property drift + prediction drift (Task 5)
+│   │   └── locustfile.py        # Locust load testing (Task 3)
+│   ├── tests/
+│   │   └── test_api.py          # pytest integration tests for the API (Task 3)
+│   ├── dvc.yaml                 # DVC pipeline definition (Task 1)
+│   ├── dvc.lock                 # DVC pipeline lock file (Task 1)
+│   ├── params.yaml              # Configuration parameters
+│   └── prometheus.yml           # Prometheus scrape configuration (Task 6)
+├── Dockerfile                   # Production image (Task 4)
+├── docker-compose.yml           # Local API service orchestration (Task 4)
+├── requirements.txt             # All dependencies
+├── requirements-api.txt         # API image dependencies (Task 4)
+└── .env.example                 # Environment variable template
 ```
 
 ## Project Tasks
@@ -133,15 +138,15 @@ locust -f scripts/locustfile.py --host http://localhost:8000
 **Deliverable:** [app/main.py](starter/app/main.py), [tests/test_api.py](starter/tests/test_api.py), [scripts/locustfile.py](starter/scripts/locustfile.py)
 
 ### Task 4 — Containerisation
-Complete [Dockerfile](starter/Dockerfile) and [docker-compose.yml](starter/docker-compose.yml) to run the FastAPI service with proper port mapping, environment variables, volume mounts for MLflow artifacts, and a health check.
+Complete [Dockerfile](Dockerfile) and [docker-compose.yml](docker-compose.yml) to run the FastAPI service with proper port mapping, environment variables, volume mounts for MLflow artifacts, and a health check.
 
 > DO NOT run docker-compose or build image locally 
 
-**Deliverable:** [Dockerfile](starter/Dockerfile), [docker-compose.yml](starter/docker-compose.yml)
+**Deliverable:** [Dockerfile](Dockerfile), [docker-compose.yml](docker-compose.yml)
 
 ### Task 5 — CI/CD Pipeline
 Complete [scripts/run_deepchecks.py](starter/scripts/run_deepchecks.py) to run property drift and prediction drift checks. 
-Then complete [.github/workflows/ci-cd.yml](starter/.github/workflows/ci-cd.yml) to build a pipeline that on every push to `main`:
+Then complete [.github/workflows/ci-cd.yml](.github/workflows/ci-cd.yml) to build a pipeline that on every push to `main`:
 1. Runs integration tests
 2. Runs Deepchecks model quality checks
 3. Builds and pushes the Docker image to Amazon ECR
@@ -172,7 +177,7 @@ gh secret set AWS_REGION --body "us-east-1"
 gh secret set ECR_REGISTRY --body ""
 ```
 
-**Deliverable:** [scripts/run_deepchecks.py](starter/scripts/run_deepchecks.py), [.github/workflows/ci-cd.yml](starter/.github/workflows/ci-cd.yml)
+**Deliverable:** [scripts/run_deepchecks.py](starter/scripts/run_deepchecks.py), [.github/workflows/ci-cd.yml](.github/workflows/ci-cd.yml)
 
 ### Task 6 — Monitoring
 Add structured JSON logging and instrument [app/main.py](starter/app/main.py) with Prometheus counters and histograms. Configure [prometheus.yml](starter/prometheus.yml) to scrape the `/metrics` endpoint. Then complete [monitoring/stream.py](starter/monitoring/stream.py) to simulate production traffic and log aggregated metrics (sentiment distribution, confidence, latency) to MLflow.
@@ -201,4 +206,4 @@ python monitoring/stream.py
 
 ## License
 
-[License](../LICENSE.txt)
+[License](LICENSE.txt)
