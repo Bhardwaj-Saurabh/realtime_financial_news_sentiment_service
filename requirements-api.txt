@@ -1,0 +1,21 @@
+# Runtime dependencies for the API image only (see Dockerfile).
+# Keep versions in step with requirements.txt.
+
+# API
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+pydantic==2.7.1
+python-dotenv==1.0.1
+requests==2.32.3
+
+# Model
+transformers>=4.40.2,<5
+torch>=2.4.0
+numpy<2
+setuptools>=69.0,<71.0
+
+# MLflow model registry
+mlflow==2.16.2
+
+# Monitoring
+prometheus-client==0.20.0
