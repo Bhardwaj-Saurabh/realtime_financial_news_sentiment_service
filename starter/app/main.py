@@ -9,12 +9,15 @@ Endpoints:
 """
 
 import os
+import time
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from utils import load_classifier
+
+MAX_TEXT_CHARS = 2000
 
 # TODO (Task 6)
 # Configure the Python logger using basicConfig.
@@ -73,21 +76,35 @@ app = FastAPI(title="Sentiment Analysis API", lifespan=lifespan)
 
 def run_predictions(texts: list[str]) -> list[PredictionResult]:
     try:
-        # TODO (Task 3): Log a warning using log() if any input text exceeds 2000
-        # characters — the model will silently truncate it, so this makes it visible.
+        long_indices = [i for i, t in enumerate(texts) if len(t) > MAX_TEXT_CHARS]
+        if long_indices:
+            log(
+                "WARNING",
+                "Input text exceeds max length and will be truncated",
+                max_chars=MAX_TEXT_CHARS,
+                indices=long_indices,
+            )
 
-        # TODO (Task 3): Record the start time, run batch inference using
-        # classifiers["sentiment"], and compute latency_ms from start to finish.
+        start = time.perf_counter()
+        outputs = classifiers["sentiment"](texts, truncation=True)
+        latency_ms = (time.perf_counter() - start) * 1000
 
-        # TODO (Task 3): Build and return a list of PredictionResult objects from
-        # the inference results (each result has "label" and "score" keys).
+        results = [
+            PredictionResult(
+                text=text,
+                sentiment=output["label"],
+                confidence=output["score"],
+                latency_ms=latency_ms,
+            )
+            for text, output in zip(texts, outputs)
+        ]
 
         # TODO (Task 6): Observe latency_ms on PREDICTION_LATENCY and increment
         # PREDICTION_REQUESTS (labelled by sentiment) for each prediction.
 
         # TODO (Task 6): Log each prediction using log() with sentiment, confidence,
         # and latency_ms fields.
-        raise NotImplementedError
+        return results
     except Exception as e:
         # TODO (Task 6): Increment PREDICTION_ERRORS, log the error using log(),
         # then re-raise.
@@ -103,30 +120,33 @@ def metrics():
     raise NotImplementedError
 
 
-# TODO: Implement the /health endpoint.
-# Return {"status": "ok"} when the model
-# is loaded, and raise an HTTP 503 error when it is not.
+def require_model() -> None:
+    if "sentiment" not in classifiers:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+
+
 @app.get("/health")
 def health():
-    raise NotImplementedError
+    require_model()
+    return {"status": "ok"}
 
 
-# TODO: Implement the POST /predict endpoint.
-# Accept a PredictRequest and return a PredictionResult.
-# Return HTTP 503 if the model is not loaded
-# Return HTTP 422 if the text is empty
 @app.post("/predict", response_model=PredictionResult)
 def predict(request: PredictRequest):
-    raise NotImplementedError
+    require_model()
+    if not request.text.strip():
+        raise HTTPException(status_code=422, detail="text must not be empty")
+    return run_predictions([request.text])[0]
 
 
-# TODO: Implement the POST /predict/batch endpoint.
-# Accept a PredictBatchRequest and return a list of PredictionResult.
-# Return HTTP 503 if the model is not loaded
-# and HTTP 422 if the texts list is empty.
 @app.post("/predict/batch", response_model=list[PredictionResult])
 def predict_batch(request: PredictBatchRequest):
-    raise NotImplementedError
+    require_model()
+    if not request.texts:
+        raise HTTPException(status_code=422, detail="texts must not be empty")
+    if any(not t.strip() for t in request.texts):
+        raise HTTPException(status_code=422, detail="texts must not contain empty strings")
+    return run_predictions(request.texts)
 
 
 if __name__ == "__main__":
