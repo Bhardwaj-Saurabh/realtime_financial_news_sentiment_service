@@ -6,6 +6,8 @@ import os
 
 from transformers import pipeline
 
+ID2LABEL = {0: "negative", 1: "neutral", 2: "positive"}
+
 
 def load_classifier():
     """
@@ -20,12 +22,16 @@ def load_classifier():
     if model_source == "huggingface":
         hf_model_id = os.getenv("HF_MODEL_ID", "baptle/FinBERT_market_based")
         print(f"Loading model from HuggingFace: {hf_model_id}")
-        return pipeline(
+        classifier = pipeline(
             "text-classification",
             model=hf_model_id,
             tokenizer=hf_model_id,
             device="cpu",
         )
+        # The Hub config ships numeric labels (0.0, 1.0, 2.0); name them.
+        classifier.model.config.id2label = ID2LABEL
+        classifier.model.config.label2id = {v: k for k, v in ID2LABEL.items()}
+        return classifier
 
     import mlflow.transformers
 
