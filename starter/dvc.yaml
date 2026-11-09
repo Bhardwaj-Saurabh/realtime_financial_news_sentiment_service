@@ -8,17 +8,17 @@ stages:
       - prepare.test_size
       - prepare.random_seed
     outs:
-      - ${prepare.data_dir}/train.csv
-      - ${prepare.data_dir}/test.csv
+      - data/train.csv
+      - data/test.csv
 
   clean:
     cmd: python scripts/clean_data.py
     deps:
       - scripts/clean_data.py
-      - ${clean.data_dir}/raw_stream.csv
+      - data/raw_stream.csv
     params:
       - clean.data_dir
       - clean.min_words
       - clean.max_words
     outs:
-      - ${clean.data_dir}/stream.csv
+      - data/stream.csv
